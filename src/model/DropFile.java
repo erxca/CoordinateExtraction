@@ -43,10 +43,9 @@ public class DropFile {
 	private final int BRANK_RATIO = 3; // 各コンポーネントの間の余白の割合
 	private final int X_RATIO = 3; // 横の余白の割合
 	private final int LBL_RATIO = 5; // フレームに対する説明ラベルの割合
-	private final int DATE_RATIO = 20;
-	private final int DDLBL_RATIO = 15;
-	private final int RESULT_RATIO = 25;
-	private final int LOG_RATIO = 18;
+	private final int DDLBL_RATIO = 20;
+	private final int RESULT_RATIO = 28;
+	private final int LOG_RATIO = 26;
 
 	public DropFile() {
 
@@ -57,7 +56,7 @@ public class DropFile {
 
 		// フレームのサイズ、コンポーネントの位置・サイズ設定
 		fWidth = w * FRAME_WIDTH_RATIO / 100;
-		fHeight = h * 3 / 5;
+		fHeight = h * 1 / 2;
 		xPos = X_RATIO * fWidth / 100;
 		cWidth = WIDTH_RATIO * fWidth / 100;
 		blank = fHeight * BRANK_RATIO / 100;
@@ -78,9 +77,9 @@ public class DropFile {
 
 		// 結果などを載せるためのテキストエリア生成
 		makeResultArea();
-		//
-		// // 途中経過表示用テキストエリア
-		// makeLogArea();
+
+		// 途中経過表示用テキストエリア
+		makeLogArea();
 
 	}
 
@@ -93,7 +92,15 @@ public class DropFile {
 
 		lbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, calcCharSize(lbl, lblHeight) - 1));
 		frame.getContentPane().add(lbl);
-		yPos += lblHeight + blank;
+		yPos += lblHeight;
+
+		JLabel lbl2 = new JLabel("※検出したホールは1つであることを確認してください");
+		int lbl2Height = fHeight * LBL_RATIO / 100;
+		lbl2.setBounds(xPos, yPos, cWidth, lbl2Height);
+
+		lbl2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, calcCharSize(lbl2, lbl2Height) - 1));
+		frame.getContentPane().add(lbl2);
+		yPos += lbl2Height + blank;
 
 	}
 
@@ -112,7 +119,7 @@ public class DropFile {
 		yPos += ddlblHeight + blank;
 
 		// ドロップ操作を有効にする
-		ddlbl.setTransferHandler(new DropFileHandler(this));
+		ddlbl.setTransferHandler(new DropFileHandler());
 
 	}
 
@@ -137,22 +144,21 @@ public class DropFile {
 		yPos += jspHeight + blank;
 	}
 
-	//
-	// // 途中経過表示用テキストエリア
-	// private void makeLogArea() {
-	// la = new MyTextArea();
-	// la.setting(raSize);
-	//
-	// la.setFocusable(false);
-	//
-	// JScrollPane jsp2 = new JScrollPane();
-	// int jsp2Height = fHeight * LOG_RATIO / 100;
-	// jsp2.setBounds(xPos, yPos, cWidth, jsp2Height);
-	// jsp2.setViewportView(la);
-	// frame.getContentPane().add(jsp2);
-	// }
-	//
-	// // 文字サイズ計算
+	// 途中経過表示用テキストエリア
+	private void makeLogArea() {
+		la = new MyTextArea();
+		la.setting(raSize);
+
+		la.setFocusable(false);
+
+		JScrollPane jsp2 = new JScrollPane();
+		int jsp2Height = fHeight * LOG_RATIO / 100;
+		jsp2.setBounds(xPos, yPos, cWidth, jsp2Height);
+		jsp2.setViewportView(la);
+		frame.getContentPane().add(jsp2);
+	}
+
+	// 文字サイズ計算
 	private int calcCharSize(Component comp, int compHeight) {
 
 		int size = 0;
@@ -164,18 +170,9 @@ public class DropFile {
 		return size;
 
 	}
-	//
-	// public ConditionPart getCp() {
-	// return cp;
-	// }
 
 	// ドロップ操作の処理を行うクラス
 	private class DropFileHandler extends TransferHandler {
-		DropFile df;
-
-		public DropFileHandler(DropFile df) {
-			this.df = df;
-		}
 
 		// ドロップされたものを受け取るか判断 (ファイルのときだけ受け取る)
 		@Override
@@ -214,14 +211,17 @@ public class DropFile {
 					return false;
 				}
 
+				String inputFileName = files.get(0).getName();
 				Date date = new Date();
 				SimpleDateFormat textAreaFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 				SimpleDateFormat fileNameFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-				String newFileDate = fileNameFormat.format(date);
 				ra.append(textAreaFormat.format(date) + "\n");
-				ra.append("> インポートしたファイル：" + files.get(0).getName() + "\n");
+				ra.append("> インポートしたファイル：" + inputFileName + "\n");
 
-				thread = new MyThread(files.get(0), newFileDate, df);
+				StringBuffer newFileName = new StringBuffer(inputFileName.substring(0, inputFileName.indexOf(".")));
+				newFileName.append("_" + fileNameFormat.format(date));
+
+				thread = new MyThread(files.get(0), newFileName.toString());
 				thread.start();
 
 			} catch (UnsupportedFlavorException | IOException e) {
@@ -233,20 +233,17 @@ public class DropFile {
 
 	private class MyThread extends Thread {
 		File newFile;
-		String fileDate;
-		DropFile df;
+		String newFileName;
 
-		public MyThread(File newFile, String fileDate, DropFile df) {
+		public MyThread(File newFile, String newFileName) {
 			this.newFile = newFile;
-			this.fileDate = fileDate;
-			this.df = df;
+			this.newFileName = newFileName;
 		}
 
 		public void run() {
 
-			// ExtractionProcessing ep = new ExtractionProcessing(newFile, fileDate, df);
-			// ep.inputFile();
-			// cct.inputFile(newFile, fileDate);
+			CoordinateExtraction ce = new CoordinateExtraction(newFile, newFileName);
+			ce.inputFile();
 
 		}
 
