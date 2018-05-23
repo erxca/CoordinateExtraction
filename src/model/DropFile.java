@@ -18,14 +18,16 @@ import java.util.List;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.TransferHandler;
 
 public class DropFile {
 
-	// CardConversionTool cct = new CardConversionTool();
 	public JFrame frame;
 	public MyTextArea ra, la;
+	public JTextField wordTf, outputNameTf;
 
 	private int fWidth, fHeight;
 	private int xPos; // 各コンポーネントのxの位置
@@ -40,11 +42,11 @@ public class DropFile {
 	private final int BRANK_RATIO = 3; // 各コンポーネントの間の余白の割合
 	private final int X_RATIO = 3; // 横の余白の割合
 	private final int LBL_RATIO = 7; // フレームに対する説明ラベルの割合
-	private final int DATE_RATIO = 13;
+	private final int CONDITION_RATIO = 13;
 	private final int DDLBL_RATIO = 15;
 	private final int RESULT_RATIO = 25;
 	private final int LOG_RATIO = 21;
-	private final int NUM = 2 * 1 + 3 * 1; // 入力部があるラベルは3、ないラベルは2の割合で分割
+	private final int NUM = 3 * 2; // 入力部があるラベルは3、ないラベルは2の割合で分割
 
 	public DropFile() {
 
@@ -71,7 +73,7 @@ public class DropFile {
 		// 説明ラベルの生成
 		makeDescriptionLabel();
 
-		// 日付設定部分生成
+		// 条件指定部分生成
 		makeConditionPart();
 
 		// ファイルをドロップさせるためのラベル生成
@@ -98,28 +100,43 @@ public class DropFile {
 
 	}
 
+	// 条件指定部分生成
 	private void makeConditionPart() {
 
-		int datePh = fHeight * DATE_RATIO / 100;
-		int ph = datePh / NUM;
-
-		JLabel selectLbl = new JLabel("オブジェクトを選択してください。");
+		int ph = fHeight * CONDITION_RATIO / 100 / NUM;
 		int lblHeight = ph * 2;
-		selectLbl.setBounds(xPos, yPos, cWidth, ph * 2);
+		int pnlHeight = ph * 3;
 
-		selectLbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, calcCharSize(selectLbl, lblHeight) - 1));
-		frame.getContentPane().add(selectLbl);
-		yPos += lblHeight + blank / 2;
+		JPanel wordPnl = new JPanel();
+		wordPnl.setBounds(xPos, yPos, cWidth, pnlHeight);
+		frame.getContentPane().add(wordPnl);
+		yPos += pnlHeight;
 
-		String[] elements = { "Hole", "Line", "Sample", "Sample2" };
-		combo = new JComboBox<String>(elements);
-		int size = calcCharSize(combo, ph * 2);
-		combo.setBounds(xPos * 2, yPos, size * 10, ph * 2);
-		combo.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size - 1));
-		combo.setSelectedIndex(-1);
+		int size = calcCharSize(wordPnl, lblHeight);
 
-		frame.getContentPane().add(combo);
-		yPos += lblHeight + blank * 3 / 2;
+		JLabel wordLbl = new JLabel("探索ワード　　：");
+		wordLbl.setBounds(xPos, yPos, cWidth, ph * 2);
+		wordLbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, calcCharSize(wordLbl, lblHeight) - 1));
+		wordPnl.add(wordLbl);
+
+		wordTf = new MyTextField(30, size);
+		wordTf.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size - 1));
+		wordPnl.add(wordTf);
+
+		JPanel outputNamePnl = new JPanel();
+		outputNamePnl.setBounds(xPos, yPos, cWidth, pnlHeight);
+		frame.getContentPane().add(outputNamePnl);
+		yPos += pnlHeight + blank;
+
+		JLabel outputNameLbl = new JLabel("出力ファイル名：");
+		outputNameLbl.setBounds(xPos, yPos, cWidth, ph * 2);
+		outputNameLbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, calcCharSize(wordLbl, lblHeight) - 1));
+		outputNamePnl.add(outputNameLbl);
+
+		outputNameTf = new MyTextField(30, size);
+		outputNameTf.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size - 1));
+		outputNamePnl.add(outputNameTf);
+
 	}
 
 	// ファイルをドロップさせるためのラベル生成
@@ -223,6 +240,14 @@ public class DropFile {
 				// ファイルを受け取る
 				@SuppressWarnings("unchecked")
 				List<File> files = (List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
+
+				if (wordTf.getText().length() == 0) {
+					ra.append("探索ワードを入力してください。\n");
+					return false;
+				} else if (outputNameTf.getText().length() == 0) {
+					ra.append("出力ファイル名を入力してください。\n");
+					return false;
+				}
 
 				if (files.size() != 1) {
 					ra.append("一度にインポートできるファイルは一つだけです。\n");

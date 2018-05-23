@@ -68,43 +68,26 @@ public class CoordinateExtraction {
 
 	private String checkObject() {
 
-		int selectedNum = window.combo.getSelectedIndex();
+		String obj = window.wordTf.getText();
+		StringBuffer sbObj = new StringBuffer(obj);
+		sbObj.append(":");
 
-		switch (selectedNum) {
-
-		case 0: // Hole
-			return "Center:";
-
-		case 1:
-			return "aaa";
-
-		case 2:
-			return "bbb";
-
-		case 3:
-			return "ccc";
-
-		default:
-			window.ra.append("オブジェクトを選択してください。\n\n");
-			return null;
-
-		}
+		return sbObj.toString();
 
 	}
 
 	private void checkText(BufferedReader txt) throws IOException {
 		String line;
-		String obj = checkObject();
+		String obj = window.wordTf.getText();
 
-		if (obj == null) {
-			return;
-		}
+		int start = obj.length() + 1;
 
 		while ((line = txt.readLine()) != null) {
 
-			if (line.indexOf(obj) > -1) {
-				coordinateList.add(line.substring(8));
-				window.la.append(line.substring(8) + "\n");
+			if (line.startsWith(obj)) {
+				int idx = line.indexOf(":");
+				coordinateList.add(line.substring(idx + 1));
+				window.la.append(line.substring(idx + 1) + "\n");
 				window.la.setCaretPosition(window.la.getText().length());
 			}
 
@@ -121,7 +104,7 @@ public class CoordinateExtraction {
 		newFilePath.append(DIR);
 
 		StringBuffer newFileNameCSV = new StringBuffer();
-		newFileNameCSV.append(newFileName);
+		newFileNameCSV.append(window.outputNameTf.getText());
 		newFileNameCSV.append(".csv");
 		newFilePath.append(newFileNameCSV);
 
