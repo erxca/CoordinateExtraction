@@ -24,6 +24,7 @@ public class CoordinateExtraction {
 
 		this.newFile = newFile;
 		this.newFileName = newFileName;
+
 	}
 
 	public static void main(String[] args) {
@@ -48,17 +49,13 @@ public class CoordinateExtraction {
 	public void inputFile() {
 
 		try {
-			// initialize();
 
 			BufferedReader txt = new BufferedReader(new InputStreamReader(new FileInputStream(newFile), "MS932"));
 
+			window.la.setText("");
 			checkText(txt);
 
 			txt.close();
-
-			// エラー処理 or ファイル出力
-
-			writeFile();
 
 		} catch (IOException ex) {
 
@@ -69,18 +66,52 @@ public class CoordinateExtraction {
 
 	}
 
+	private String checkObject() {
+
+		int selectedNum = window.combo.getSelectedIndex();
+
+		switch (selectedNum) {
+
+		case 0: // Hole
+			return "Center:";
+
+		case 1:
+			return "aaa";
+
+		case 2:
+			return "bbb";
+
+		case 3:
+			return "ccc";
+
+		default:
+			window.ra.append("オブジェクトを選択してください。\n\n");
+			return null;
+
+		}
+
+	}
+
 	private void checkText(BufferedReader txt) throws IOException {
 		String line;
+		String obj = checkObject();
+
+		if (obj == null) {
+			return;
+		}
 
 		while ((line = txt.readLine()) != null) {
 
-			if (line.indexOf("Center:") > -1) {
+			if (line.indexOf(obj) > -1) {
 				coordinateList.add(line.substring(8));
 				window.la.append(line.substring(8) + "\n");
 				window.la.setCaretPosition(window.la.getText().length());
 			}
 
 		}
+
+		// ファイル出力
+		writeFile();
 	}
 
 	private void writeFile() throws FileNotFoundException {

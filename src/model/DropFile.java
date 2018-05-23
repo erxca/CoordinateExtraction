@@ -15,11 +15,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextField;
 import javax.swing.TransferHandler;
 
 public class DropFile {
@@ -33,19 +32,19 @@ public class DropFile {
 	private int cWidth, blank, yPos;
 	private int raSize = 0;
 
-	public JCheckBox cb;
-	public boolean dateIsSelected = true;
-	public JTextField name;
 	MyThread thread;
+	public JComboBox<String> combo;
 
-	private final int FRAME_WIDTH_RATIO = 50; // フレームの画面に対する幅の割合
+	private final int FRAME_WIDTH_RATIO = 40; // フレームの画面に対する幅の割合
 	private final int WIDTH_RATIO = 94; // 各コンポーネントのフレームに対する幅の割合
 	private final int BRANK_RATIO = 3; // 各コンポーネントの間の余白の割合
 	private final int X_RATIO = 3; // 横の余白の割合
-	private final int LBL_RATIO = 5; // フレームに対する説明ラベルの割合
-	private final int DDLBL_RATIO = 20;
-	private final int RESULT_RATIO = 28;
-	private final int LOG_RATIO = 26;
+	private final int LBL_RATIO = 7; // フレームに対する説明ラベルの割合
+	private final int DATE_RATIO = 13;
+	private final int DDLBL_RATIO = 15;
+	private final int RESULT_RATIO = 25;
+	private final int LOG_RATIO = 21;
+	private final int NUM = 2 * 1 + 3 * 1; // 入力部があるラベルは3、ないラベルは2の割合で分割
 
 	public DropFile() {
 
@@ -63,7 +62,7 @@ public class DropFile {
 		yPos = blank;
 
 		// フレームの生成
-		frame = new JFrame("中心座標抽出ツール");
+		frame = new JFrame("オブジェクトデータ抽出ツール");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setLayout(null);
 		frame.getContentPane().setPreferredSize(new Dimension(fWidth, fHeight));
@@ -71,6 +70,9 @@ public class DropFile {
 
 		// 説明ラベルの生成
 		makeDescriptionLabel();
+
+		// 日付設定部分生成
+		makeConditionPart();
 
 		// ファイルをドロップさせるためのラベル生成
 		makeDdLabel();
@@ -92,16 +94,32 @@ public class DropFile {
 
 		lbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, calcCharSize(lbl, lblHeight) - 1));
 		frame.getContentPane().add(lbl);
-		yPos += lblHeight;
+		yPos += lblHeight + blank;
 
-		JLabel lbl2 = new JLabel("※検出したホールは1つであることを確認してください");
-		int lbl2Height = fHeight * LBL_RATIO / 100;
-		lbl2.setBounds(xPos, yPos, cWidth, lbl2Height);
+	}
 
-		lbl2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, calcCharSize(lbl2, lbl2Height) - 1));
-		frame.getContentPane().add(lbl2);
-		yPos += lbl2Height + blank;
+	private void makeConditionPart() {
 
+		int datePh = fHeight * DATE_RATIO / 100;
+		int ph = datePh / NUM;
+
+		JLabel selectLbl = new JLabel("オブジェクトを選択してください。");
+		int lblHeight = ph * 2;
+		selectLbl.setBounds(xPos, yPos, cWidth, ph * 2);
+
+		selectLbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, calcCharSize(selectLbl, lblHeight) - 1));
+		frame.getContentPane().add(selectLbl);
+		yPos += lblHeight + blank / 2;
+
+		String[] elements = { "Hole", "Line", "Sample", "Sample2" };
+		combo = new JComboBox<String>(elements);
+		int size = calcCharSize(combo, ph * 2);
+		combo.setBounds(xPos * 2, yPos, size * 10, ph * 2);
+		combo.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size - 1));
+		combo.setSelectedIndex(-1);
+
+		frame.getContentPane().add(combo);
+		yPos += lblHeight + blank * 3 / 2;
 	}
 
 	// ファイルをドロップさせるためのラベル生成
