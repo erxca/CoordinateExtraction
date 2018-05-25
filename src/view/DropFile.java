@@ -1,4 +1,4 @@
-package model;
+package view;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -15,19 +15,21 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextField;
 import javax.swing.TransferHandler;
+
+import model.CoordinateExtraction;
 
 public class DropFile {
 
 	public JFrame frame;
 	public MyTextArea ra, la;
-	public JTextField wordTf, outputNameTf;
+	public MyTextField wordTf, outputNameTf;
 
 	private int fWidth, fHeight;
 	private int xPos; // 各コンポーネントのxの位置
@@ -133,9 +135,13 @@ public class DropFile {
 		outputNameLbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, calcCharSize(wordLbl, lblHeight) - 1));
 		outputNamePnl.add(outputNameLbl);
 
-		outputNameTf = new MyTextField(30, size);
+		outputNameTf = new MyTextField(25, size);
 		outputNameTf.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size - 1));
 		outputNamePnl.add(outputNameTf);
+
+		JButton btn = new JButton("参照");
+		btn.addActionListener(new MyButtonListener(frame, outputNameTf));
+		outputNamePnl.add(btn);
 
 	}
 
@@ -257,14 +263,10 @@ public class DropFile {
 				String inputFileName = files.get(0).getName();
 				Date date = new Date();
 				SimpleDateFormat textAreaFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-				SimpleDateFormat fileNameFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
 				ra.append(textAreaFormat.format(date) + "\n");
 				ra.append("> インポートしたファイル：" + inputFileName + "\n");
 
-				StringBuffer newFileName = new StringBuffer(inputFileName.substring(0, inputFileName.indexOf(".")));
-				newFileName.append("_" + fileNameFormat.format(date));
-
-				thread = new MyThread(files.get(0), newFileName.toString());
+				thread = new MyThread(files.get(0));
 				thread.start();
 
 			} catch (UnsupportedFlavorException | IOException e) {
@@ -276,16 +278,14 @@ public class DropFile {
 
 	private class MyThread extends Thread {
 		File newFile;
-		String newFileName;
 
-		public MyThread(File newFile, String newFileName) {
+		public MyThread(File newFile) {
 			this.newFile = newFile;
-			this.newFileName = newFileName;
 		}
 
 		public void run() {
 
-			CoordinateExtraction ce = new CoordinateExtraction(newFile, newFileName);
+			CoordinateExtraction ce = new CoordinateExtraction(newFile);
 			ce.inputFile();
 
 		}

@@ -13,17 +13,17 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
+import view.DropFile;
+
 public class CoordinateExtraction {
 	static DropFile window;
 	private File newFile;
-	private String newFileName;
 	private ArrayList<String> coordinateList = new ArrayList<String>();
 	private static String DIR = ".\\data\\";
 
-	public CoordinateExtraction(File newFile, String newFileName) {
+	public CoordinateExtraction(File newFile) {
 
 		this.newFile = newFile;
-		this.newFileName = newFileName;
 
 	}
 
@@ -66,21 +66,9 @@ public class CoordinateExtraction {
 
 	}
 
-	private String checkObject() {
-
-		String obj = window.wordTf.getText();
-		StringBuffer sbObj = new StringBuffer(obj);
-		sbObj.append(":");
-
-		return sbObj.toString();
-
-	}
-
 	private void checkText(BufferedReader txt) throws IOException {
 		String line;
 		String obj = window.wordTf.getText();
-
-		int start = obj.length() + 1;
 
 		while ((line = txt.readLine()) != null) {
 
@@ -105,7 +93,7 @@ public class CoordinateExtraction {
 
 		StringBuffer newFileNameCSV = new StringBuffer();
 		newFileNameCSV.append(window.outputNameTf.getText());
-		newFileNameCSV.append(".csv");
+		// newFileNameCSV.append(".csv");
 		newFilePath.append(newFileNameCSV);
 
 		window.ra.append("> エクスポートしたファイル：" + newFileNameCSV.toString() + "\n");
