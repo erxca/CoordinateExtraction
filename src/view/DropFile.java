@@ -16,9 +16,11 @@ import java.util.Date;
 import java.util.List;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.TransferHandler;
@@ -38,17 +40,18 @@ public class DropFile {
 
 	MyThread thread;
 	public JComboBox<String> combo;
+	public JCheckBox cb;
 
 	private final int FRAME_WIDTH_RATIO = 40; // フレームの画面に対する幅の割合
 	private final int WIDTH_RATIO = 94; // 各コンポーネントのフレームに対する幅の割合
 	private final int BRANK_RATIO = 3; // 各コンポーネントの間の余白の割合
 	private final int X_RATIO = 3; // 横の余白の割合
-	private final int LBL_RATIO = 7; // フレームに対する説明ラベルの割合
-	private final int CONDITION_RATIO = 13;
+	private final int LBL_RATIO = 5; // フレームに対する説明ラベルの割合
+	private final int CONDITION_RATIO = 18;
 	private final int DDLBL_RATIO = 15;
 	private final int RESULT_RATIO = 25;
-	private final int LOG_RATIO = 21;
-	private final int NUM = 3 * 2; // 入力部があるラベルは3、ないラベルは2の割合で分割
+	private final int LOG_RATIO = 18;
+	private final int NUM = 3 * 3; // 入力部があるラベルは3、ないラベルは2の割合で分割
 
 	public DropFile() {
 
@@ -59,7 +62,7 @@ public class DropFile {
 
 		// フレームのサイズ、コンポーネントの位置・サイズ設定
 		fWidth = w * FRAME_WIDTH_RATIO / 100;
-		fHeight = h * 1 / 2;
+		fHeight = h * 3 / 5;
 		xPos = X_RATIO * fWidth / 100;
 		cWidth = WIDTH_RATIO * fWidth / 100;
 		blank = fHeight * BRANK_RATIO / 100;
@@ -109,16 +112,35 @@ public class DropFile {
 		int lblHeight = ph * 2;
 		int pnlHeight = ph * 3;
 
+		JPanel checkPnl = new JPanel();
+		checkPnl.setBounds(xPos, yPos, cWidth, pnlHeight);
+		frame.getContentPane().add(checkPnl);
+		yPos += pnlHeight;
+
+		int size = calcCharSize(checkPnl, lblHeight);
+
+		JLabel checkLbl = new JLabel("抽出対象　　　：");
+		checkLbl.setBounds(xPos, yPos, cWidth, lblHeight);
+		checkLbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size - 1));
+		checkPnl.add(checkLbl);
+
+		cb = new JCheckBox("Surface-PC");
+		cb.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size - 1));
+		checkPnl.add(cb);
+
+		JLabel fake = new JLabel("　　　　　　　　　　　　　　　 　");
+		fake.setBounds(xPos, yPos, cWidth, lblHeight);
+		fake.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size - 1));
+		checkPnl.add(fake);
+
 		JPanel wordPnl = new JPanel();
 		wordPnl.setBounds(xPos, yPos, cWidth, pnlHeight);
 		frame.getContentPane().add(wordPnl);
 		yPos += pnlHeight;
 
-		int size = calcCharSize(wordPnl, lblHeight);
-
 		JLabel wordLbl = new JLabel("探索ワード　　：");
-		wordLbl.setBounds(xPos, yPos, cWidth, ph * 2);
-		wordLbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, calcCharSize(wordLbl, lblHeight) - 1));
+		wordLbl.setBounds(xPos, yPos, cWidth, lblHeight);
+		wordLbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size - 1));
 		wordPnl.add(wordLbl);
 
 		wordTf = new MyTextField(30, size);
@@ -126,13 +148,13 @@ public class DropFile {
 		wordPnl.add(wordTf);
 
 		JPanel outputNamePnl = new JPanel();
-		outputNamePnl.setBounds(xPos, yPos, cWidth, pnlHeight);
+		outputNamePnl.setBounds(xPos, yPos, cWidth, lblHeight * 2);
 		frame.getContentPane().add(outputNamePnl);
-		yPos += pnlHeight + blank;
+		yPos += lblHeight * 2 + blank;
 
 		JLabel outputNameLbl = new JLabel("出力ファイル名：");
-		outputNameLbl.setBounds(xPos, yPos, cWidth, ph * 2);
-		outputNameLbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, calcCharSize(wordLbl, lblHeight) - 1));
+		outputNameLbl.setBounds(xPos, yPos, cWidth, lblHeight);
+		outputNameLbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size - 1));
 		outputNamePnl.add(outputNameLbl);
 
 		outputNameTf = new MyTextField(25, size);
@@ -141,6 +163,7 @@ public class DropFile {
 
 		JButton btn = new JButton("参照");
 		btn.addActionListener(new MyButtonListener(frame, outputNameTf));
+		btn.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size - 1));
 		outputNamePnl.add(btn);
 
 	}
@@ -247,27 +270,36 @@ public class DropFile {
 				@SuppressWarnings("unchecked")
 				List<File> files = (List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
 
-				if (wordTf.getText().length() == 0) {
-					ra.append("探索ワードを入力してください。\n");
+				if (!cb.isSelected() && wordTf.getText().length() == 0) {
+					ra.append("ERROR!! > 「抽出対象」にチェックを入れるか、もしくは「探索ワード」を入力してください。\n");
 					return false;
 				} else if (outputNameTf.getText().length() == 0) {
-					ra.append("出力ファイル名を入力してください。\n");
+					ra.append("ERROR!! > 出力ファイル名を入力してください。\n");
 					return false;
 				}
 
 				if (files.size() != 1) {
-					ra.append("一度にインポートできるファイルは一つだけです。\n");
+					ra.append("ERROR!! > 一度にインポートできるファイルは一つだけです。\n");
 					return false;
 				}
 
 				String inputFileName = files.get(0).getName();
-				Date date = new Date();
-				SimpleDateFormat textAreaFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-				ra.append(textAreaFormat.format(date) + "\n");
-				ra.append("> インポートしたファイル：" + inputFileName + "\n");
+				int option = -2;
 
-				thread = new MyThread(files.get(0));
-				thread.start();
+				if (!inputFileName.startsWith("_")) {
+					option = JOptionPane.showConfirmDialog(frame, "ファイル名が\"_（アンダーバー）\"から始まっていません。このまま実行してもよろしいですか？",
+							"Warning", JOptionPane.YES_NO_OPTION);
+				}
+
+				if (option == -2 || option == JOptionPane.YES_OPTION) {
+					Date date = new Date();
+					SimpleDateFormat textAreaFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+					ra.append(textAreaFormat.format(date) + "\n");
+					ra.append("> インポートしたファイル：" + inputFileName + "\n");
+
+					thread = new MyThread(files.get(0));
+					thread.start();
+				}
 
 			} catch (UnsupportedFlavorException | IOException e) {
 				e.printStackTrace();

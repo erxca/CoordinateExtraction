@@ -20,6 +20,7 @@ public class CoordinateExtraction {
 	private File newFile;
 	private ArrayList<String> coordinateList = new ArrayList<String>();
 	private static String DIR = ".\\data\\";
+	private BufferedReader txt;
 
 	public CoordinateExtraction(File newFile) {
 
@@ -50,10 +51,10 @@ public class CoordinateExtraction {
 
 		try {
 
-			BufferedReader txt = new BufferedReader(new InputStreamReader(new FileInputStream(newFile), "MS932"));
+			txt = new BufferedReader(new InputStreamReader(new FileInputStream(newFile), "MS932"));
 
 			window.la.setText("");
-			checkText(txt);
+			checkCondition();
 
 			txt.close();
 
@@ -66,7 +67,91 @@ public class CoordinateExtraction {
 
 	}
 
-	private void checkText(BufferedReader txt) throws IOException {
+	private void checkCondition() throws IOException {
+
+		if (window.cb.isSelected()) {
+			checkSurfacePCData();
+		} else {
+			checkWord();
+
+		}
+
+		// ファイル出力
+		writeFile();
+
+	}
+
+	private void checkSurfacePCData() throws IOException {
+		String line;
+		int num = 0;
+		StringBuffer sb = new StringBuffer();
+		StringBuffer tmpsb = new StringBuffer();
+
+		while ((line = txt.readLine()) != null) {
+
+			if (line.indexOf("DocTitle") > -1) {
+
+				sb = new StringBuffer();
+				int start = line.indexOf("[");
+				int end = line.indexOf("]");
+
+				sb.append(line.substring(start + 1, end));
+				sb.append(",");
+				sb.append(line.substring(line.lastIndexOf(" ")));
+				coordinateList.add(sb.toString());
+
+				num = 0;
+
+			} else if (line.indexOf("Trace: Valid =") > -1) {
+
+				sb = new StringBuffer();
+				num++;
+				sb.append(" ");
+				sb.append(",");
+				sb.append(num);
+				sb.append(",");
+
+				sb.append(convertPercent(line));
+
+			} else if (line.indexOf("Trace: Inner =") > -1) {
+
+				tmpsb = convertPercent(line);
+
+			} else if (line.indexOf("Trace: Valid Test") > -1) {
+
+				sb.append(line.substring(line.lastIndexOf(" ")));
+				sb.append(",");
+				sb.append(tmpsb);
+
+			} else if (line.indexOf("Trace: Inner Test") > -1) {
+
+				sb.append(line.substring(line.lastIndexOf(" ")));
+				coordinateList.add(sb.toString());
+
+			}
+
+			window.la.append(line + "\n");
+			window.la.setCaretPosition(window.la.getText().length());
+		}
+
+	}
+
+	private StringBuffer convertPercent(String line) {
+		StringBuffer sb = new StringBuffer();
+
+		Double d = Double.parseDouble(line.substring(line.lastIndexOf(" ")));
+		Double percentD = Math.floor(d * 1000) / 10;
+
+		sb.append(percentD.toString());
+		sb.append(",");
+		sb.append(" ");
+		sb.append(",");
+
+		return sb;
+
+	}
+
+	private void checkWord() throws IOException {
 		String line;
 		String obj = window.wordTf.getText();
 
@@ -81,23 +166,27 @@ public class CoordinateExtraction {
 
 		}
 
-		// ファイル出力
-		writeFile();
 	}
 
 	private void writeFile() throws FileNotFoundException {
+		String tfText = window.outputNameTf.getText();
 
 		// 出力ファイル生成
 		StringBuffer newFilePath = new StringBuffer();
-		newFilePath.append(DIR);
 
-		StringBuffer newFileNameCSV = new StringBuffer();
-		newFileNameCSV.append(window.outputNameTf.getText());
-		// newFileNameCSV.append(".csv");
-		newFilePath.append(newFileNameCSV);
+		if (tfText.indexOf("\\") < 0) {
+			newFilePath.append(DIR);
+		}
 
-		window.ra.append("> エクスポートしたファイル：" + newFileNameCSV.toString() + "\n");
-		window.ra.append("データ数：" + coordinateList.size() + " 個\n\n");
+		newFilePath.append(tfText);
+
+		if (newFilePath.toString().indexOf(".csv") < 0) {
+			newFilePath.append(".csv");
+		}
+		// newFilePath.append(newFileNameCSV);
+
+		window.ra.append("> エクスポートしたファイル：" + newFilePath.toString() + "\n");
+		window.ra.append("出力行数：" + coordinateList.size() + " 個\n\n");
 		window.ra.setCaretPosition(window.ra.getText().length());
 
 		try {

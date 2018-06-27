@@ -61,7 +61,7 @@ public class MyButtonListener implements ActionListener {
 		if (selected == JFileChooser.APPROVE_OPTION) {
 
 			File file = filechooser.getSelectedFile();
-			tf.setText(checkExtension(file.getName()));
+			tf.setText(checkExtension(file.getPath()));
 			// tf.setText(file.getName());
 
 		} else if (selected == JFileChooser.ERROR_OPTION) {
