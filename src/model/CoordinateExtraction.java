@@ -21,6 +21,7 @@ public class CoordinateExtraction {
 	private ArrayList<String> coordinateList = new ArrayList<String>();
 	private static String DIR = ".\\data\\";
 	private BufferedReader txt;
+	private ProcessSurfacePCLog spc;
 
 	public CoordinateExtraction(File newFile) {
 
@@ -70,7 +71,8 @@ public class CoordinateExtraction {
 	private void checkCondition() throws IOException {
 
 		if (window.cb.isSelected()) {
-			checkSurfacePCData();
+			spc = new ProcessSurfacePCLog(window, txt);
+			spc.checkSurfacePCData();
 		} else {
 			checkWord();
 
@@ -186,7 +188,7 @@ public class CoordinateExtraction {
 		// newFilePath.append(newFileNameCSV);
 
 		window.ra.append("> エクスポートしたファイル：" + newFilePath.toString() + "\n");
-		window.ra.append("出力行数：" + coordinateList.size() + " 個\n\n");
+		window.ra.append("出力行数：" + spc.coordinateList.size() + " 個\n\n");
 		window.ra.setCaretPosition(window.ra.getText().length());
 
 		try {
@@ -195,7 +197,7 @@ public class CoordinateExtraction {
 			OutputStreamWriter osw = new OutputStreamWriter(fos, "MS932");
 			BufferedWriter bw = new BufferedWriter(osw);
 
-			for (String coord : coordinateList) {
+			for (String coord : spc.coordinateList) {
 				bw.write(coord);
 				bw.write("\n");
 			}
