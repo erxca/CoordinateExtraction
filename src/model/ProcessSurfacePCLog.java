@@ -10,14 +10,13 @@ public class ProcessSurfacePCLog {
 	DropFile window;
 	BufferedReader txt;
 	ArrayList<String> coordinateList = new ArrayList<String>();
+	ArrayList<String> outputList = new ArrayList<String>();
+	private ArrayList<String> tempList = new ArrayList<String>();
 	private ArrayList<String> fileName = new ArrayList<String>();
-	// private ArrayList<Integer> dataNum = new ArrayList<Integer>();
 	boolean isRoop = false;
 
-	// private int fileNum = -1; // amlファイルの番号
-	private int lineNum = 0; //
-	private int titleNum = 0; // 時刻、ファイル名を書く行番号
-	private int currentfile = 0; // 現在見ているデータのファイル番号
+	private int fileNum = -1; // amlファイルの番号
+	private int roopNum = 0;
 
 	public ProcessSurfacePCLog(DropFile window, BufferedReader txt) {
 		// TODO 自動生成されたコンストラクター・スタブ
@@ -27,26 +26,24 @@ public class ProcessSurfacePCLog {
 
 	public void checkSurfacePCData() {
 		try {
-			makeLine();
+			extractionData();
 		} catch (IOException e) {
 			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 		}
 	}
 
-	public void makeLine() throws IOException {
+	// ログファイル内から必要なデータを抽出してリストへ入れる
+	public void extractionData() throws IOException {
 		String line;
 		int num = 0;
 		StringBuffer sb = new StringBuffer();
-		StringBuffer tmpsb = new StringBuffer();
+		StringBuffer inner = new StringBuffer();
+		String amlName = "";
 
 		while ((line = txt.readLine()) != null) {
 
 			if (line.indexOf("DocTitle") > -1) {
-
-				// if (dataNum.get(fileNum) == null) {
-				// dataNum.set(fileNum, num);
-				// }
 
 				sb = new StringBuffer();
 				int start = line.indexOf("[");
@@ -55,14 +52,20 @@ public class ProcessSurfacePCLog {
 				sb.append(line.substring(start + 1, end));
 				sb.append(",");
 
-				String amlName = line.substring(line.lastIndexOf(" "));
+				String camlName = line.substring(line.lastIndexOf(" "));
+
+				amlName = camlName;
 				checkAmlFileName(amlName);
 
 				sb.append(amlName);
-				sb.append(", , , , , , ,");
+				sb.append(", , , , , ,");
 
-				// coordinateList.add(sb.toString());
-				addList(sb, titleNum);
+				if (coordinateList.size() != 0) {
+					coordinateList.add("current:roop[" + roopNum + "] data[" + num + "] next:file[" + fileNum + "] num["
+							+ fileName.size() + "]");
+				}
+
+				coordinateList.add(sb.toString());
 
 				num = 0;
 
@@ -79,31 +82,37 @@ public class ProcessSurfacePCLog {
 
 			} else if (line.indexOf("Trace: Inner =") > -1) {
 
-				tmpsb = convertPercent(line);
+				inner = convertPercent(line);
 
 			} else if (line.indexOf("Trace: Valid Test") > -1) {
 
 				sb.append(line.substring(line.lastIndexOf(" ")));
 				sb.append(",");
-				sb.append(tmpsb);
+				sb.append(inner);
 
 			} else if (line.indexOf("Trace: Inner Test") > -1) {
 
 				sb.append(line.substring(line.lastIndexOf(" ")));
 
-				// coordinateList.add(sb.toString());
-				addList(sb, titleNum + num);
+				coordinateList.add(sb.toString());
 
 			}
 
 			window.la.append(line + "\n");
 			window.la.setCaretPosition(window.la.getText().length());
 
-			lineNum++;
 		}
+
+		coordinateList.add("current:roop[" + roopNum + "] data[" + num + "] next:file[0] num[");
+
+		for (String s : coordinateList) {
+			System.out.println(s);
+		}
+		makeOutputList();
 
 	}
 
+	// 小数表記をパーセント表記に直す
 	private StringBuffer convertPercent(String line) {
 		StringBuffer sb = new StringBuffer();
 
@@ -119,19 +128,16 @@ public class ProcessSurfacePCLog {
 
 	}
 
+	// ファイル名がすでにリスト内にあるかをチェックする
+	// リスト内になければ新しいループの始まりとみなす
 	private void checkAmlFileName(String amlName) {
 		boolean isExist = false;
-		System.out.println("amlName: " + amlName);
 
 		if (fileName.size() != 0) {
 			for (String name : fileName) {
 
 				if (name.equals(amlName)) {
-					System.out.println(amlName);
 					isExist = true;
-					currentfile = fileName.indexOf(name);
-					System.out.println(currentfile);
-
 					isRoop = true;
 
 					break;
@@ -139,62 +145,129 @@ public class ProcessSurfacePCLog {
 			}
 
 			if (!isRoop && !isExist) {
-				fileName.add(++currentfile, amlName);
+				fileName.add(amlName);
 			}
 
 			if (isRoop && !isExist) {
 				fileName = new ArrayList<String>();
 				fileName.add(0, amlName);
 				isRoop = false;
+				roopNum++;
 			}
+			fileNum = fileName.indexOf(amlName);
 		} else {
 			fileName.add(0, amlName);
+			fileNum = 0;
 		}
 
-		// fileNum++;
 	}
 
-	private void addList(StringBuffer sb, int line) {
-		StringBuffer linedata = new StringBuffer();
+	private void makeOutputList() {
+		int startIdx = 0;
+		int endIdx = 0;
 
-		System.out.println(sb.toString() + " " + line + " " + currentfile);
+		tempList.add("start");
+		for (int i = 0; i < coordinateList.size(); i++) {
+			if (coordinateList.get(i).indexOf("file[0]") != -1) {
+				endIdx = i;
+				String cl = coordinateList.get(i);
 
-		if (currentfile == 0) {
+				int p1 = 0;
+				int p2 = 0;
+				int max = 0;
+				for (int j = startIdx; j <= endIdx; j++) {
+					cl = coordinateList.get(j);
+					System.out.println("cl: " + cl);
 
-			coordinateList.add(sb.toString());
+					int si;
+					if ((si = cl.indexOf("data[")) != -1) {
+						p1 = p2;
+						p2 = Integer.parseInt(cl.substring(si + 5, cl.indexOf("] next")));
+						max = Math.max(p1, p2);
+					}
+				}
 
-			if (line == titleNum) {
+				int resultLine = 0;
+				for (int j = startIdx; j <= endIdx; j++) {
 
-				titleNum = coordinateList.size() - 1;
-
-			}
-
-		} else {
-
-			if (coordinateList.size() > line) {
-
-				linedata.append(coordinateList.get(line));
-				System.out.println(coordinateList.get(line));
-				linedata.append(", ,");
-				linedata.append(sb.toString());
-				coordinateList.set(line, sb.toString());
-				System.out.println(linedata.toString());
-
-			} else {
-
-				for (int i = 1; i < currentfile; i++) {
-
-					linedata.append(", , , , , , , , ,");
+					resultLine = insertBlankAndInfo(coordinateList.get(j), max, resultLine);
 
 				}
 
-				linedata.append(sb.toString());
-				coordinateList.add(sb.toString());
-
+				startIdx = endIdx + 1;
 			}
-
 		}
 
+		for (String s : tempList) {
+			System.out.println(s);
+		}
+
+		rearrange();
+
+	}
+
+	private int insertBlankAndInfo(String cl, int max, int resultLine) {
+
+		if (cl.startsWith(" ,")) {
+			tempList.add(cl);
+			resultLine++;
+
+		} else if (cl.startsWith("current:")) {
+			for (int k = resultLine; k < max; k++) {
+				tempList.add(" , , , , , , , ");
+			}
+			resultLine = 0;
+
+			if (cl.substring(cl.indexOf("file[") + 5, cl.indexOf("] num")).equals("0")) {
+				tempList.add("start");
+
+			} else {
+				tempList.add("change");
+			}
+
+		} else {
+			tempList.add(cl);
+		}
+
+		return resultLine;
+
+	}
+
+	private void rearrange() {
+		int opIdx = 0;
+		int tempNum = 0;
+		boolean isStart = false;
+
+		for (String s : tempList) {
+
+			if (s.equals("start")) {
+				opIdx = outputList.size();
+				isStart = true;
+				tempNum = 0;
+
+			} else if (s.equals("change")) {
+				isStart = false;
+				tempNum = 0;
+
+			} else {
+				if (isStart) {
+					outputList.add(s);
+
+				} else {
+					StringBuffer sb = new StringBuffer();
+					sb.append(outputList.get(opIdx + tempNum));
+					sb.append(",");
+					sb.append(s);
+					outputList.set(opIdx + tempNum, sb.toString());
+				}
+
+				tempNum++;
+			}
+		}
+
+		for (String s : outputList) {
+			System.out.println(s);
+		}
 	}
 
 }

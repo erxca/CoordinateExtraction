@@ -22,6 +22,7 @@ public class CoordinateExtraction {
 	private static String DIR = ".\\data\\";
 	private BufferedReader txt;
 	private ProcessSurfacePCLog spc;
+	private boolean isSurfacePc;
 
 	public CoordinateExtraction(File newFile) {
 
@@ -68,88 +69,22 @@ public class CoordinateExtraction {
 
 	}
 
+	// 抽出条件チェック。Surface-PCのログなのかどうかをチェックし、適した抽出方法を行う
 	private void checkCondition() throws IOException {
 
-		if (window.cb.isSelected()) {
+		if (isSurfacePc = window.cb.isSelected()) {
+
 			spc = new ProcessSurfacePCLog(window, txt);
 			spc.checkSurfacePCData();
+
 		} else {
+
 			checkWord();
 
 		}
 
 		// ファイル出力
 		writeFile();
-
-	}
-
-	private void checkSurfacePCData() throws IOException {
-		String line;
-		int num = 0;
-		StringBuffer sb = new StringBuffer();
-		StringBuffer tmpsb = new StringBuffer();
-
-		while ((line = txt.readLine()) != null) {
-
-			if (line.indexOf("DocTitle") > -1) {
-
-				sb = new StringBuffer();
-				int start = line.indexOf("[");
-				int end = line.indexOf("]");
-
-				sb.append(line.substring(start + 1, end));
-				sb.append(",");
-				sb.append(line.substring(line.lastIndexOf(" ")));
-				coordinateList.add(sb.toString());
-
-				num = 0;
-
-			} else if (line.indexOf("Trace: Valid =") > -1) {
-
-				sb = new StringBuffer();
-				num++;
-				sb.append(" ");
-				sb.append(",");
-				sb.append(num);
-				sb.append(",");
-
-				sb.append(convertPercent(line));
-
-			} else if (line.indexOf("Trace: Inner =") > -1) {
-
-				tmpsb = convertPercent(line);
-
-			} else if (line.indexOf("Trace: Valid Test") > -1) {
-
-				sb.append(line.substring(line.lastIndexOf(" ")));
-				sb.append(",");
-				sb.append(tmpsb);
-
-			} else if (line.indexOf("Trace: Inner Test") > -1) {
-
-				sb.append(line.substring(line.lastIndexOf(" ")));
-				coordinateList.add(sb.toString());
-
-			}
-
-			window.la.append(line + "\n");
-			window.la.setCaretPosition(window.la.getText().length());
-		}
-
-	}
-
-	private StringBuffer convertPercent(String line) {
-		StringBuffer sb = new StringBuffer();
-
-		Double d = Double.parseDouble(line.substring(line.lastIndexOf(" ")));
-		Double percentD = Math.floor(d * 1000) / 10;
-
-		sb.append(percentD.toString());
-		sb.append(",");
-		sb.append(" ");
-		sb.append(",");
-
-		return sb;
 
 	}
 
@@ -171,6 +106,8 @@ public class CoordinateExtraction {
 	}
 
 	private void writeFile() throws FileNotFoundException {
+		ArrayList<String> resultList;
+
 		String tfText = window.outputNameTf.getText();
 
 		// 出力ファイル生成
@@ -185,10 +122,11 @@ public class CoordinateExtraction {
 		if (newFilePath.toString().indexOf(".csv") < 0) {
 			newFilePath.append(".csv");
 		}
-		// newFilePath.append(newFileNameCSV);
+
+		resultList = isSurfacePc ? spc.outputList : coordinateList;
 
 		window.ra.append("> エクスポートしたファイル：" + newFilePath.toString() + "\n");
-		window.ra.append("出力行数：" + spc.coordinateList.size() + " 個\n\n");
+		window.ra.append("出力行数：" + resultList.size() + " 行\n\n");
 		window.ra.setCaretPosition(window.ra.getText().length());
 
 		try {
@@ -197,7 +135,7 @@ public class CoordinateExtraction {
 			OutputStreamWriter osw = new OutputStreamWriter(fos, "MS932");
 			BufferedWriter bw = new BufferedWriter(osw);
 
-			for (String coord : spc.coordinateList) {
+			for (String coord : resultList) {
 				bw.write(coord);
 				bw.write("\n");
 			}
