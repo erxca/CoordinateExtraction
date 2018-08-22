@@ -79,7 +79,7 @@ public class CoordinateExtraction {
 
 		} else {
 
-			checkWord();
+			checkLog();
 
 		}
 
@@ -88,17 +88,37 @@ public class CoordinateExtraction {
 
 	}
 
-	private void checkWord() throws IOException {
+	private void checkLog() throws IOException {
 		String line;
-		String obj = window.wordTf.getText();
+		String object = "!!!!!";
+		String word = window.wordTf.getText();
+		StringBuffer sb = new StringBuffer();
+
+		if (word.equals("Center") || word.equals("Normal") || word.equals("Radius")) {
+			object = "WorkHole";
+		} else if (word.equals("Dimension")) {
+			object = "Work3D_Dim";
+		}
 
 		while ((line = txt.readLine()) != null) {
 
-			if (line.startsWith(obj)) {
+			if (line.indexOf(object) > -1) {
+				// sb = new StringBuffer();
+
+				int start = line.indexOf("[") + 1;
+				int end = line.indexOf("]");
+				sb.append(line.substring(start, end));
+				sb.append(",");
+
+			} else if (line.startsWith(word)) {
 				int idx = line.indexOf(":");
-				coordinateList.add(line.substring(idx + 1));
-				window.la.append(line.substring(idx + 1) + "\n");
+				sb.append(line.substring(idx + 1));
+				coordinateList.add(sb.toString());
+
+				window.la.append(sb.toString() + "\n");
 				window.la.setCaretPosition(window.la.getText().length());
+
+				sb = new StringBuffer();
 			}
 
 		}

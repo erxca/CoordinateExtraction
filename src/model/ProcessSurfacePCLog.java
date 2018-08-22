@@ -13,13 +13,13 @@ public class ProcessSurfacePCLog {
 	ArrayList<String> outputList = new ArrayList<String>();
 	private ArrayList<String> tempList = new ArrayList<String>();
 	private ArrayList<String> fileName = new ArrayList<String>();
-	boolean isRoop = false;
+	boolean isRoop = false; // ループの2週目以降のときtrue
 
 	private int fileNum = -1; // amlファイルの番号
-	private int roopNum = 0;
+	private int roopNum = 0; // 処理に使ってないけど一応残しておく
 
 	public ProcessSurfacePCLog(DropFile window, BufferedReader txt) {
-		// TODO 自動生成されたコンストラクター・スタブ
+
 		this.window = window;
 		this.txt = txt;
 	}
@@ -28,7 +28,7 @@ public class ProcessSurfacePCLog {
 		try {
 			extractionData();
 		} catch (IOException e) {
-			// TODO 自動生成された catch ブロック
+
 			e.printStackTrace();
 		}
 	}
@@ -37,24 +37,23 @@ public class ProcessSurfacePCLog {
 	public void extractionData() throws IOException {
 		String line;
 		int num = 0;
-		StringBuffer sb = new StringBuffer();
+		StringBuffer sb = new StringBuffer(); // 1回分のログを1行にまとめたもの
 		StringBuffer inner = new StringBuffer();
 		String amlName = "";
 
 		while ((line = txt.readLine()) != null) {
 
-			if (line.indexOf("DocTitle") > -1) {
+			if (line.indexOf("DocTitle") > -1) { // ファイル名の行
 
 				sb = new StringBuffer();
-				int start = line.indexOf("[");
-				int end = line.indexOf("]");
 
-				sb.append(line.substring(start + 1, end));
+				// 日時取得
+				int start = line.indexOf("[") + 1;
+				int end = line.indexOf("]");
+				sb.append(line.substring(start, end));
 				sb.append(",");
 
-				String camlName = line.substring(line.lastIndexOf(" "));
-
-				amlName = camlName;
+				amlName = line.substring(line.lastIndexOf(" "));
 				checkAmlFileName(amlName);
 
 				sb.append(amlName);
@@ -133,9 +132,11 @@ public class ProcessSurfacePCLog {
 	private void checkAmlFileName(String amlName) {
 		boolean isExist = false;
 
+		// ファイル名のリストにすでに中身がある
 		if (fileName.size() != 0) {
 			for (String name : fileName) {
 
+				// リスト内にすでにあるファイル名のとき
 				if (name.equals(amlName)) {
 					isExist = true;
 					isRoop = true;
@@ -144,10 +145,13 @@ public class ProcessSurfacePCLog {
 				}
 			}
 
+			// まだループ2週目に入っていなくて、リスト内にないファイル名のとき
 			if (!isRoop && !isExist) {
 				fileName.add(amlName);
 			}
 
+			// ループ2週目以降で、リスト内にないファイル名のとき
+			// ＝新しいループが始まるのでいろいろ初期化してから登録
 			if (isRoop && !isExist) {
 				fileName = new ArrayList<String>();
 				fileName.add(0, amlName);
@@ -155,6 +159,9 @@ public class ProcessSurfacePCLog {
 				roopNum++;
 			}
 			fileNum = fileName.indexOf(amlName);
+
+			// ファイル名のリストに中身がない
+			// （一番最初のデータなのでスッと登録）
 		} else {
 			fileName.add(0, amlName);
 			fileNum = 0;
@@ -163,27 +170,28 @@ public class ProcessSurfacePCLog {
 	}
 
 	private void makeOutputList() {
-		int startIdx = 0;
-		int endIdx = 0;
+		int startIdx = 0; // ループ内の1つ目のデータ
+		int endIdx = 0; // ループ内の最後のデータ
 
 		tempList.add("start");
+
 		for (int i = 0; i < coordinateList.size(); i++) {
 			if (coordinateList.get(i).indexOf("file[0]") != -1) {
 				endIdx = i;
-				String cl = coordinateList.get(i);
+				String listData = coordinateList.get(i);
 
 				int p1 = 0;
-				int p2 = 0;
+				// int p2 = 0;
 				int max = 0;
 				for (int j = startIdx; j <= endIdx; j++) {
-					cl = coordinateList.get(j);
-					System.out.println("cl: " + cl);
+					listData = coordinateList.get(j);
+					// System.out.println("cl: " + listData);
 
 					int si;
-					if ((si = cl.indexOf("data[")) != -1) {
-						p1 = p2;
-						p2 = Integer.parseInt(cl.substring(si + 5, cl.indexOf("] next")));
-						max = Math.max(p1, p2);
+					if ((si = listData.indexOf("data[")) != -1) {
+						// p1 = max;
+						p1 = Integer.parseInt(listData.substring(si + 5, listData.indexOf("] next")));
+						max = Math.max(p1, max);
 					}
 				}
 
@@ -208,12 +216,12 @@ public class ProcessSurfacePCLog {
 
 	private int insertBlankAndInfo(String cl, int max, int resultLine) {
 
-		if (cl.startsWith(" ,")) {
+		if (cl.startsWith(" ,")) { // データ行
 			tempList.add(cl);
 			resultLine++;
 
-		} else if (cl.startsWith("current:")) {
-			for (int k = resultLine; k < max; k++) {
+		} else if (cl.startsWith("current:")) { // 付加情報行
+			for (int k = resultLine; k < max; k++) { // データ数が足りていないところに空行を足す
 				tempList.add(" , , , , , , , ");
 			}
 			resultLine = 0;
@@ -225,7 +233,7 @@ public class ProcessSurfacePCLog {
 				tempList.add("change");
 			}
 
-		} else {
+		} else { // 日時とファイル名の行
 			tempList.add(cl);
 		}
 
@@ -235,19 +243,19 @@ public class ProcessSurfacePCLog {
 
 	private void rearrange() {
 		int opIdx = 0;
-		int tempNum = 0;
+		int diffLine = 0;
 		boolean isStart = false;
 
 		for (String s : tempList) {
 
-			if (s.equals("start")) {
+			if (s.equals("start")) { // ループの先頭
 				opIdx = outputList.size();
 				isStart = true;
-				tempNum = 0;
+				diffLine = 0;
 
-			} else if (s.equals("change")) {
+			} else if (s.equals("change")) { // ループ内でのファイルチェンジ
 				isStart = false;
-				tempNum = 0;
+				diffLine = 0;
 
 			} else {
 				if (isStart) {
@@ -255,13 +263,13 @@ public class ProcessSurfacePCLog {
 
 				} else {
 					StringBuffer sb = new StringBuffer();
-					sb.append(outputList.get(opIdx + tempNum));
+					sb.append(outputList.get(opIdx + diffLine));
 					sb.append(",");
 					sb.append(s);
-					outputList.set(opIdx + tempNum, sb.toString());
+					outputList.set(opIdx + diffLine, sb.toString());
 				}
 
-				tempNum++;
+				diffLine++;
 			}
 		}
 
